@@ -6,24 +6,25 @@ using System.Web.Mvc;
 using Umbraco.Web.Mvc;
 //Added system.IO for input output generating. 
 using System.IO;
+//Standard microsoft namespace for validating email adresses.
 using System.Net.Mail;
+//used for logging. 
+using System.Text;
 
 namespace CVSImport.Controllers.Surface
 {
-    //Todo: when does this get called?
     public class CVSImportController : SurfaceController
     {
         //Called from http://localhost:1471/umbraco/Surface/CVSImport/ImportCSV
         public ActionResult ImportCSV()
         {
-
-            List<Member> newMembers = new List<Member>();
-
             List<int> userNameIterators = new List<int>();
 
             List<int> nameIterators = new List<int>();
 
             List<int> emailIterators = new List<int>();
+
+            StringBuilder log = new StringBuilder();
 
             //Attempt 1: using a stream to get the file from a locked location, then splitting it up into c# objects that can be added via the extended and exposed service. 
             //Todo: does this need to be a hard location?
@@ -31,14 +32,13 @@ namespace CVSImport.Controllers.Surface
             {
                 int currentLine = 0;
 
-                
-
                 while (!reader.EndOfStream)
                 {
                     string line = reader.ReadLine();
 
                     List<string> values = line.Split(',').ToList();
 
+                    //checks the first line of the CSV for the columns present and gets the column number of relevant columns. 
                     if (currentLine == 0)
                     {
                         //These strings will be used to find the column names that will form the username. 
@@ -89,29 +89,43 @@ namespace CVSImport.Controllers.Surface
                         }
                     }
 
-                    if (IsValid(newMember.Email))
+                    if (ValidateNewMember(newMember))
                     {
-                        newMembers.Add(newMember);
+                        Services.MemberService.CreateMemberWithIdentity(newMember.Username, newMember.Email, newMember.Name, "Member");
+
+                        log.AppendFormat($"Succesfully added new member {newMember.Username} ({newMember.Email}).<br />");
                     }
-
-                    if (Services.MemberService.FindByEmail(newMember.Email).Any())
+                    else
                     {
-
+                        log.AppendFormat($"failed to add new member {newMember.Username} ({newMember.Email}).<br />");
                     }
 
                     currentLine++;
                 }
             }
 
-            //Services.MemberService.CreateMember()
+            log.AppendLine("Done.");
 
-            return Content("Done");
+            return Content(log.ToString());
         }
 
 
         //This should be a service. If such a service already exists, replace this one with the existing one. 
+        public bool ValidateNewMember(Member member)
+        {
+            if (IsValidEmail(member.Email) && IsNewMember(member))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        //This should be a service. If such a service already exists, replace this one with the existing one. 
         //Done as reccomended by Microsoft.
-        public bool IsValid(string emailaddress)
+        public bool IsValidEmail(string emailaddress)
         {
             try
             {
@@ -124,8 +138,31 @@ namespace CVSImport.Controllers.Surface
                 return false;
             }
         }
+
+        //This should be a service. If such a service already exists, replace this one with the existing one. 
+        public bool IsNewMember(Member member)
+        {
+            var newMember = Services.MemberService.GetByEmail(member.Email);
+
+            if (newMember == null)
+            {
+                newMember = Services.MemberService.GetByUsername(member.Username);
+
+                if (newMember == null)
+                {
+                    return true;
+                }
+
+                return false;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 
+    //Can this be replaced with the IMember Interface, or is a more isolated model better suited here?
     public class Member
     {
         public string Name { get; set; }
