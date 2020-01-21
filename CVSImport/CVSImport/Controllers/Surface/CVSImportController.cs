@@ -54,11 +54,6 @@ namespace CVSImport.Controllers.Surface
 
                         for (int i = 0; i < values.Length; i++)
                         {
-                            if (!values.Contains())
-                            {
-
-                            }
-
                             if (userNameComponents.Contains(values[i]))
                             {
                                 userNameIterators.Add(i);
