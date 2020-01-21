@@ -11,8 +11,10 @@ using System.Net.Mail;
 //used for logging. 
 using System.Text;
 
+//Minor typo here; should be CSVImport
 namespace CVSImport.Controllers.Surface
 {
+    //Minor typo here; should be CSVImport. If fixed, change URL to reflect the change. 
     public class CVSImportController : SurfaceController
     {
         //Called from http://localhost:1471/umbraco/Surface/CVSImport/ImportCSV
@@ -26,7 +28,7 @@ namespace CVSImport.Controllers.Surface
 
             StringBuilder log = new StringBuilder();
 
-            //Attempt 1: using a stream to get the file from a locked location, then splitting it up into c# objects that can be added via the extended and exposed service. 
+            //Using a stream to get the file from a locked location, then splitting it up into c# objects that can be added via the extended and exposed service. 
             //Todo: does this need to be a hard location?
             using (var reader = new StreamReader(@"D:\Documents\Embrace_Project\MOCK_DATA.csv"))
             {
@@ -36,7 +38,7 @@ namespace CVSImport.Controllers.Surface
                 {
                     string line = reader.ReadLine();
 
-                    List<string> values = line.Split(',').ToList();
+                    string[] values = line.Split(',');
 
                     //checks the first line of the CSV for the columns present and gets the column number of relevant columns. 
                     if (currentLine == 0)
@@ -50,8 +52,13 @@ namespace CVSImport.Controllers.Surface
                         //These strings will be used to find the column names that will form the Email. 
                         List<string> emailComponents = new List<string>() { "email" };
 
-                        for (int i = 0; i < values.Count; i++)
+                        for (int i = 0; i < values.Length; i++)
                         {
+                            if (!values.Contains())
+                            {
+
+                            }
+
                             if (userNameComponents.Contains(values[i]))
                             {
                                 userNameIterators.Add(i);
@@ -71,9 +78,9 @@ namespace CVSImport.Controllers.Surface
                         continue;
                     }
 
-                    Member newMember = new Member() { Username = "", Name = "", Email = "" };
+                    Member newMember = new Member();
 
-                    for (int i = 0; i < values.Count; i++)
+                    for (int i = 0; i < values.Length; i++)
                     {
                         if (userNameIterators.Contains(i))
                         {
@@ -89,7 +96,7 @@ namespace CVSImport.Controllers.Surface
                         }
                     }
 
-                    if (ValidateNewMember(newMember))
+                    if (IsValidNewMember(newMember))
                     {
                         Services.MemberService.CreateMemberWithIdentity(newMember.Username, newMember.Email, newMember.Name, "Member");
 
@@ -111,7 +118,7 @@ namespace CVSImport.Controllers.Surface
 
 
         //This should be a service. If such a service already exists, replace this one with the existing one. 
-        public bool ValidateNewMember(Member member)
+        public bool IsValidNewMember(Member member)
         {
             if (IsValidEmail(member.Email) && IsNewMember(member))
             {
